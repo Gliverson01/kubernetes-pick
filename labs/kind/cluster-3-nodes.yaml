@@ -1,0 +1,16 @@
+# Cluster com 1 control-plane e 2 workers.
+# Uso: kind create cluster --name pick --config labs/kind/cluster-3-nodes.yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    # Expõe as portas 80/443 do host para testar Ingress depois
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 80
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 443
+        protocol: TCP
+  - role: worker
+  - role: worker
