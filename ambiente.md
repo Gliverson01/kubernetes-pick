@@ -1,30 +1,30 @@
 # Ambiente
 
-Cluster kind `pick` rodando no Ubuntu (WSL2) do PC. Comandos executados de dentro de `~/kubernetes-pick`.
+Cluster kind `kind-multinodes` rodando no Ubuntu (WSL2) do PC. Comandos executados de dentro de `~/kubernetes-pick`.
 
 ## Ligar o ambiente (depois de reiniciar o PC)
 
-O cluster para quando o WSL desliga. Para voltar:
+O cluster para quando o WSL desliga. Para voltar (liga todos os containers do cluster pelo nome):
 
 ```bash
-docker start pick-control-plane pick-worker pick-worker2
+docker start $(docker ps -aq --filter label=io.x-k8s.kind.cluster=kind-multinodes)
 kubectl get nodes
 ```
 
-Os nodes podem levar uns segundos para ficar `Ready`.
+O API Server leva uns 10-20 segundos para responder depois do `docker start`. Se o `kubectl` não retornar nada ou der erro de conexão, espere um pouco e rode de novo.
 
 ## Criar o cluster do zero
 
 ```bash
-kind create cluster --name pick --config labs/kind/cluster-3-nodes.yaml
+kind create cluster --name kind-multinodes --config labs/kind/cluster-3-nodes.yaml
 kubectl get nodes
 ```
 
 ## Apagar e recriar (quando algo der muito errado)
 
 ```bash
-kind delete cluster --name pick
-kind create cluster --name pick --config labs/kind/cluster-3-nodes.yaml
+kind delete cluster --name kind-multinodes
+kind create cluster --name kind-multinodes --config labs/kind/cluster-3-nodes.yaml
 ```
 
 Nada se perde: os manifests ficam salvos no Git.
@@ -33,7 +33,7 @@ Nada se perde: os manifests ficam salvos no Git.
 
 ```bash
 kind get clusters                  # lista os clusters
-kubectl config current-context     # deve mostrar kind-pick
+kubectl config current-context     # deve mostrar kind-kind-multinodes
 docker ps                          # os nodes do kind aparecem como containers
 ```
 
