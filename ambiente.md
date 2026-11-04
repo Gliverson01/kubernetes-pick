@@ -13,17 +13,33 @@ kubectl get nodes
 
 O API Server leva uns 10-20 segundos para responder depois do `docker start`. Se o `kubectl` não retornar nada ou der erro de conexão, espere um pouco e rode de novo.
 
-## Desligar (ao terminar)
+## Desligar (ao terminar de estudar)
+
+**1. Parar o cluster** (no terminal do Ubuntu):
 
 ```bash
 docker stop $(docker ps -q --filter label=io.x-k8s.kind.cluster)
 ```
 
-E no PowerShell, para o WSL parar de consumir memória:
+Mostra os IDs dos 3 containers conforme param. Leva uns 10 segundos.
+
+**2. Desligar o WSL** (no PowerShell do Windows):
 
 ```powershell
 wsl --shutdown
 ```
+
+Fecha o Ubuntu e libera a memória que ele estava usando.
+
+**3. Conferir** (no PowerShell):
+
+```powershell
+wsl -l -v
+```
+
+O Ubuntu deve aparecer como `Stopped`.
+
+Ao abrir o Ubuntu de novo, o WSL liga, mas o cluster fica desligado até rodar o comando de [Ligar](#ligar-quando-for-estudar).
 
 ## Criar o cluster do zero
 
