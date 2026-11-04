@@ -1,30 +1,46 @@
 # Ambiente
 
-Cluster kind `kind-multinodes` rodando no Ubuntu (WSL2) do PC. Comandos executados de dentro de `~/kubernetes-pick`.
+Cluster kind `glicluster` rodando no Ubuntu (WSL2) do PC. Comandos executados de dentro de `~/kubernetes-pick`.
 
-## Ligar o ambiente (depois de reiniciar o PC)
+Os comandos de ligar e desligar usam o filtro `label=io.x-k8s.kind.cluster`, que pega os containers de **qualquer** cluster kind, então funcionam mesmo se o cluster for recriado com outro nome.
 
-O cluster para quando o WSL desliga. Para voltar (liga todos os containers do cluster pelo nome):
+## Ligar (quando for estudar)
 
 ```bash
-docker start $(docker ps -aq --filter label=io.x-k8s.kind.cluster=kind-multinodes)
+docker start $(docker ps -aq --filter label=io.x-k8s.kind.cluster)
 kubectl get nodes
 ```
 
 O API Server leva uns 10-20 segundos para responder depois do `docker start`. Se o `kubectl` não retornar nada ou der erro de conexão, espere um pouco e rode de novo.
 
+## Desligar (ao terminar)
+
+```bash
+docker stop $(docker ps -q --filter label=io.x-k8s.kind.cluster)
+```
+
+E no PowerShell, para o WSL parar de consumir memória:
+
+```powershell
+wsl --shutdown
+```
+
 ## Criar o cluster do zero
 
 ```bash
-kind create cluster --name kind-multinodes --config labs/kind/cluster-3-nodes.yaml
+kind create cluster --name glicluster --config labs/kind/cluster-3-nodes.yaml
+docker update --restart=no $(docker ps -aq --filter label=io.x-k8s.kind.cluster)
 kubectl get nodes
 ```
+
+O `docker update` impede o cluster de ligar sozinho quando o WSL abre. Por padrão, o kind cria os containers com `restart=on-failure:1`, que religa o cluster se o Docker reiniciar com ele rodando (por exemplo, quando o WSL desliga sem um `docker stop` antes).
 
 ## Apagar e recriar (quando algo der muito errado)
 
 ```bash
-kind delete cluster --name kind-multinodes
-kind create cluster --name kind-multinodes --config labs/kind/cluster-3-nodes.yaml
+kind delete cluster --name glicluster
+kind create cluster --name glicluster --config labs/kind/cluster-3-nodes.yaml
+docker update --restart=no $(docker ps -aq --filter label=io.x-k8s.kind.cluster)
 ```
 
 Nada se perde: os manifests ficam salvos no Git.
@@ -33,7 +49,7 @@ Nada se perde: os manifests ficam salvos no Git.
 
 ```bash
 kind get clusters                  # lista os clusters
-kubectl config current-context     # deve mostrar kind-kind-multinodes
+kubectl config current-context     # deve mostrar kind-glicluster
 docker ps                          # os nodes do kind aparecem como containers
 ```
 
