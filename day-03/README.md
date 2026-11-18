@@ -62,8 +62,54 @@ kubectl get pods -l app=nginx-deployment   # filtra pelos mesmos labels do selec
 
 > **Obs.:** o `strategy: {}` no YAML é sobra do `--dry-run`. Vazio, usa o padrão (`RollingUpdate`).
 
+## Namespace
+
+[namespace.yaml](namespace.yaml): namespace `glipops`. O Deployment passou a ser criado nele (`metadata.namespace: glipops`).
+
+- Namespace separa os recursos do cluster em "pastas": o mesmo nome de Deployment pode existir em namespaces diferentes.
+
+> **Complemento:** o namespace tem que existir **antes** do Deployment, senão o apply dá `namespaces "glipops" not found`. Sem `-n`, o kubectl olha o namespace `default`, por isso o Deployment "some" do `kubectl get pods`.
+
+```bash
+kubectl apply -f day-03/namespace.yaml
+kubectl apply -f day-03/deployment.yaml
+kubectl get pods -n glipops
+kubectl config set-context --current --namespace=glipops   # deixa o glipops como padrão
+```
+
+## Estratégia de atualização
+
+Subi o Deployment para **10 réplicas** com a imagem `nginx:1.15.0` e configurei o `strategy`:
+
+```yaml
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 1
+```
+
+- **RollingUpdate:** a atualização é parcial, vai trocando os pods aos poucos.
+- **Recreate:** a atualização é completa, derruba todos os pods antigos e depois sobe os novos.
+- `kubectl rollout status` mostra o andamento da atualização.
+
+> **Complemento:**
+> - **maxSurge: 1** = pode ter até **1 pod a mais** que o `replicas` durante a troca (até 11).
+> - **maxUnavailable: 1** = pode ter até **1 pod a menos** disponível (no mínimo 9 no ar).
+> - Os dois aceitam número ou porcentagem (o padrão é `25%`).
+> - O **Recreate** deixa a aplicação fora do ar entre derrubar e subir. Serve quando duas versões não podem rodar juntas (ex.: migração de banco que quebra a versão antiga).
+
+```bash
+kubectl set image deploy nginx-deployment nginx=nginx:1.27 -n glipops   # imperativo, só para testar
+kubectl rollout status deploy nginx-deployment -n glipops
+kubectl get rs -n glipops -w                                            # ver o ReplicaSet novo subir e o antigo descer
+```
+
+> **Obs.:** `nginx:1.15.0` é de 2018. Para treinar o rolling update está ótimo (dá para atualizar para uma versão nova e ver a troca), mas não é imagem para usar de verdade.
+
 ## Para revisar
 
-- [ ] Trocar a imagem no YAML (ex.: `nginx:1.27`), aplicar e acompanhar o rolling update com `kubectl get rs -w`
+- [ ] Trocar a imagem no YAML de `nginx:1.15.0` para `nginx:1.27`, aplicar e acompanhar o rolling update com `kubectl get rs -n glipops -w`
+- [ ] Testar o `Recreate` e comparar com o RollingUpdate
 - [ ] Fazer um `rollout undo` e ver o ReplicaSet antigo voltar
 - [ ] Apagar um pod do Deployment e ver o ReplicaSet criar outro
