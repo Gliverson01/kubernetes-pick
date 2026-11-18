@@ -4,19 +4,26 @@ metadata:
   labels:
     app: nginx-deployment
   name: nginx-deployment
+  namespace: glipops
 spec:
-  replicas: 3
+  replicas: 10
   selector:
     matchLabels:
       app: nginx-deployment
-  strategy: {}
+  strategy:
+    type: RollingUpdate # estrategia para atualizacao ser parcial 
+    #typo: Recreate = estrategia para atualizacao ser completa
+    #k rollout status para ver o status da atualizacao
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
   template:
     metadata:
       labels:
         app: nginx-deployment
     spec:
       containers:
-      - image: nginx
+      - image: nginx:1.15.0
         name: nginx
         resources:
           limits:
