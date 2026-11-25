@@ -20,7 +20,7 @@ kubectl delete pod <um-pod-do-rs>          # o ReplicaSet cria outro na hora
 
 ## DaemonSet
 
-[nginx-daemonset.yaml](nginx-daemonset.yaml): DaemonSet `node-exporter-daemonset` rodando o `prom/node-exporter` (exporter de métricas do Prometheus).
+[node-exporter-daemonset.yaml](node-exporter-daemonset.yaml): DaemonSet `node-exporter-daemonset` rodando o `prom/node-exporter` (exporter de métricas do Prometheus).
 
 - O DaemonSet roda **um pod em cada node**. Não tem `replicas`: o número de pods é o número de nodes.
 - Se entrar um node novo no cluster, ele ganha um pod automaticamente. Se um node sai, o pod dele some junto.
@@ -34,10 +34,9 @@ O que tem nesse YAML:
 > **Complemento:**
 > - No kind, o DaemonSet sobe só nos **2 workers**. O control-plane tem um **taint** (`node-role.kubernetes.io/control-plane:NoSchedule`) que impede pods comuns de rodar nele. Para rodar lá também, precisaria de uma `toleration`.
 > - O node-exporter normalmente recebe `args` dizendo onde estão os diretórios montados (`--path.procfs=/host/proc` e `--path.sysfs=/host/sys`). Sem isso, ele lê o `/proc` e o `/sys` de dentro do container.
-> - O arquivo se chama `nginx-daemonset.yaml`, mas não tem nginx nele.
 
 ```bash
-kubectl apply -f day-04/nginx-daemonset.yaml
+kubectl apply -f day-04/node-exporter-daemonset.yaml
 kubectl get ds
 kubectl get pods -o wide -l app=node-exporter-daemonset   # um pod por worker, coluna NODE
 kubectl describe node glicluster-control-plane | grep Taints
