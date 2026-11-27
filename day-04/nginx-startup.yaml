@@ -32,5 +32,5 @@ spec:
           initialDelaySeconds: 10 # O tempo que iremos esperar para executar a primeira vez a probe
           periodSeconds: 10 # De quanto em quanto tempo iremos executar a probe
           timeoutSeconds: 5 # O tempo que iremos esperar para considerar que a probe falhou
-          successThreshold: 2 # O número de vezes que a probe precisa passar para considerar que o container está pronto
+          successThreshold: 1 # Na startup só aceita 1: passou uma vez, o container subiu
           failureThreshold: 3 # O número de vezes que a probe precisa falhar para considerar que o container não está pronto

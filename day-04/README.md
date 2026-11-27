@@ -108,7 +108,7 @@ As probes são os testes que o **kubelet** faz no container para saber se ele es
 
 [nginx-startup.yaml](nginx-startup.yaml): `httpGet` em `/` na porta 80.
 
-> **Correção:** na startup (e na liveness), o `successThreshold` **só aceita 1**. Com `successThreshold: 2`, o `kubectl apply` é recusado pela API com um erro dizendo que o valor deve ser 1. Para o arquivo funcionar, é só tirar essa linha ou trocar para `1`.
+> **Correção:** na startup (e na liveness), o `successThreshold` **só aceita 1**. Com `successThreshold: 2`, o `kubectl apply` é recusado pela API com um erro dizendo que o valor deve ser 1. No arquivo ficou `1`.
 
 > **Complemento:**
 > - O tempo máximo para o container subir é `initialDelaySeconds + failureThreshold x periodSeconds`. Nesse arquivo: 10 + 3 x 10 = **40s**. Se não subir nesse tempo, o kubelet reinicia.
@@ -130,6 +130,6 @@ kubectl get pods                                     # coluna RESTARTS sobe quan
 - [ ] Trocar a imagem do ReplicaSet no YAML, aplicar e ver que os pods antigos não mudam
 - [ ] Adicionar uma `toleration` no DaemonSet para rodar também no control-plane
 - [ ] Acessar as métricas do node-exporter (`curl <IP-do-node>:9100/metrics` de dentro do cluster)
-- [ ] Corrigir o `successThreshold` da startup e aplicar
+- [ ] Aplicar a startup e ver os eventos no `kubectl describe pod`
 - [ ] Quebrar a liveness de propósito (ex.: porta 81) e ver o RESTARTS subir
 - [ ] Quebrar a readiness (ex.: `path: /nao-existe`) e ver o pod ficar `0/1` sem reiniciar
