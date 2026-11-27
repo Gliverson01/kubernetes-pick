@@ -1,4 +1,4 @@
-# Day 04 - ReplicaSet, DaemonSet e limpeza do cluster
+# Day 04 - ReplicaSet, DaemonSet, probes e limpeza do cluster
 
 **Data:** 2026-11-25
 
@@ -68,8 +68,68 @@ kubectl delete namespace glipops               # apaga tudo do namespace
 
 > **Obs.:** namespace é um recurso do cluster inteiro, então `kubectl get namespaces -n glipops` ignora o `-n`.
 
+## Probes
+
+As probes são os testes que o **kubelet** faz no container para saber se ele está vivo, pronto ou já terminou de subir. Os três arquivos usam o mesmo Deployment de nginx com 3 réplicas, mudando só a probe.
+
+| Probe | Pergunta | Se falhar |
+|---|---|---|
+| **liveness** | O container está vivo? | O kubelet **reinicia** o container |
+| **readiness** | O container está pronto para receber tráfego? | O pod sai do Service (não recebe requisição), mas **não reinicia** |
+| **startup** | O container já terminou de subir? | O kubelet **reinicia** o container. Enquanto ela não passa, a liveness e a readiness ficam desligadas |
+
+### Tipos de teste
+
+- `tcpSocket`: só tenta abrir uma conexão TCP na porta. Passou se conectou.
+- `httpGet`: faz um GET no `path` e na `port`. Passou se a resposta for de 200 a 399.
+- `exec`: roda um comando dentro do container. Passou se o comando sair com código 0.
+
+### Campos
+
+- `initialDelaySeconds`: quanto esperar antes da primeira verificação.
+- `periodSeconds`: de quanto em quanto tempo verifica.
+- `timeoutSeconds`: quanto esperar a resposta antes de contar como falha.
+- `failureThreshold`: quantas falhas seguidas até agir (reiniciar ou tirar do tráfego).
+- `successThreshold`: quantos sucessos seguidos para voltar a considerar ok.
+
+### Liveness
+
+[nginx-liveness.yaml](nginx-liveness.yaml): `tcpSocket` na porta 80, a cada 10s, reinicia depois de 3 falhas seguidas.
+
+> **Complemento:** o `tcpSocket` só prova que a porta está aberta. Um nginx travado ou devolvendo erro 500 ainda passa. Para web, o `httpGet` testa mais de verdade.
+
+### Readiness
+
+[nginx-readiness.yaml](nginx-readiness.yaml): `httpGet` em `/` na porta 80, precisa de 2 sucessos seguidos para o pod ficar pronto.
+
+> **Complemento:** o pod aparece como `0/1` na coluna READY até a readiness passar. Com `initialDelaySeconds: 10` e `successThreshold: 2`, leva uns 20s para ficar `1/1`. No comentário do arquivo está "probe de leitura", mas readiness é **prontidão**.
+
+### Startup
+
+[nginx-startup.yaml](nginx-startup.yaml): `httpGet` em `/` na porta 80.
+
+> **Correção:** na startup (e na liveness), o `successThreshold` **só aceita 1**. Com `successThreshold: 2`, o `kubectl apply` é recusado pela API com um erro dizendo que o valor deve ser 1. Para o arquivo funcionar, é só tirar essa linha ou trocar para `1`.
+
+> **Complemento:**
+> - O tempo máximo para o container subir é `initialDelaySeconds + failureThreshold x periodSeconds`. Nesse arquivo: 10 + 3 x 10 = **40s**. Se não subir nesse tempo, o kubelet reinicia.
+> - A startup serve para aplicação que demora para subir: ela segura a liveness até a aplicação estar de pé, para a liveness não matar o container no meio da inicialização. Por isso ela costuma vir **junto** com uma liveness no mesmo container.
+
+### Os três arquivos são o mesmo Deployment
+
+Os três (e o `nginx-deployment.yaml`) usam `name: nginx-deployment`. Aplicar um depois do outro não cria três Deployments: o segundo **substitui** o primeiro, com um rolling update.
+
+```bash
+kubectl apply -f day-04/nginx-readiness.yaml
+kubectl get pods -w                                  # READY 0/1 até a readiness passar
+kubectl describe pod <pod>                           # mostra Liveness/Readiness/Startup e os eventos "Unhealthy"
+kubectl get pods                                     # coluna RESTARTS sobe quando a liveness falha
+```
+
 ## Para revisar
 
 - [ ] Trocar a imagem do ReplicaSet no YAML, aplicar e ver que os pods antigos não mudam
 - [ ] Adicionar uma `toleration` no DaemonSet para rodar também no control-plane
 - [ ] Acessar as métricas do node-exporter (`curl <IP-do-node>:9100/metrics` de dentro do cluster)
+- [ ] Corrigir o `successThreshold` da startup e aplicar
+- [ ] Quebrar a liveness de propósito (ex.: porta 81) e ver o RESTARTS subir
+- [ ] Quebrar a readiness (ex.: `path: /nao-existe`) e ver o pod ficar `0/1` sem reiniciar
